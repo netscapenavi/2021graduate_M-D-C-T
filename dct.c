@@ -16,7 +16,7 @@ void dct4(float *pcm, int length) /*DCT-IV*/
 	{
 		in[i*2][0]=0;/*Real part*/
 		in[i*2][1]=0;/*Imaginary part*/
-		in[i*2+1][0]=pcm[i];
+		in[i*2+1][0]=0.25*pcm[i];
 		in[i*2+1][1]=0;
 	}
 	in[2*length][0]=0;
@@ -37,7 +37,7 @@ void dct4(float *pcm, int length) /*DCT-IV*/
 	fftw_execute(schedule);
 	for (i=0; i<length; ++i)
 	{
-		*(dct_result+i)=out[i*2+1][0];
+		*(dct_result+i)=2*out[i*2+1][0];  /*Normalize 상수는 MDCT에서 2, IMDCT에서 2/N*/
 	}
 	fftw_destroy_plan(schedule);
 	fftw_free(in);
@@ -49,10 +49,10 @@ void mdct(float *pcm, int pcm_length)
 	int i;
 	float *pcm_shorten;
 	pcm_shorten=(float*)calloc(pcm_length/2,sizeof(float));
-	for (i=0; i<pcm_length/2; ++i)
+	for (i=0; i<pcm_length/4; ++i)/*MDCT는 input 수가 2N개인 상황에서 특정 방식으로 합해 N개로 줄인 상태에서 수행하는 DCT.*/
 	{
-		pcm_shorten[i]=(-1.0)*(pcm[3*pcm_length/2-1-i]+pcm[3*pcm_length/2+i]);
-		pcm_shorten[i+pcm_length/2]=pcm[i]-pcm[pcm_length-1-i];
+		pcm_shorten[i]=(-1.0)*(pcm[3*pcm_length/4-1-i]+pcm[3*pcm_length/4+i]);
+		pcm_shorten[i+pcm_length/4]=pcm[i]-pcm[pcm_length/2-1-i];
 	}
 	dct4(pcm_shorten, pcm_length/2);
 	free(pcm_shorten);
