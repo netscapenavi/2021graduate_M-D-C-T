@@ -1,2 +1,0 @@
-#define WINDOW_SIZE 256
-#define MAX_FILENAME_LEGNTH 256
