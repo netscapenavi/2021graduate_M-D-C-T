@@ -52,7 +52,7 @@ float* dct4(float *pcm, int length) /*DCT-IV*/
 	fftw_execute(schedule);
 	for (i=0; i<length; ++i)
 	{
-		*(dct_result+i)=2*out[i*2+1][0];  /*Normalize 상수는 MDCT에서 2, IMDCT에서 2/N*/
+		*(dct_result+i)=out[i*2+1][0];
 	}
 	fftw_destroy_plan(schedule);
 	fftw_free(in);
@@ -67,26 +67,55 @@ float* mdct(float *pcm, int pcm_length)
 	static float* dct4_result;
 	pcm_shorten=(float*)calloc(pcm_length/2,sizeof(float));
 	dct4_result=(float*)calloc(pcm_length/2,sizeof(float));
-	for (i=0; i<pcm_length/4; ++i)/*MDCT는 input 수가 2N개인 상황에서 특정 방식으로 합해 N개로 줄인 상태에서 수행하는 DCT.*/
+	for (i=0; i<(pcm_length>>2); ++i)/*MDCT는 input 수가 2N개인 상황에서 특정 방식으로 합해 N개로 줄인 상태에서 수행하는 DCT.*/
 	{
-		pcm_shorten[i]=(-1.0)*(pcm[3*pcm_length/4-1-i]+pcm[3*pcm_length/4+i]);
-		pcm_shorten[i+pcm_length/4]=pcm[i]-pcm[pcm_length/2-1-i];
+		pcm_shorten[i]=(-1.0)*(pcm[3*(pcm_length>>2)-1-i]+pcm[3*(pcm_length>>2)+i]);
+		pcm_shorten[i+(pcm_length>>2)]=pcm[i]-pcm[(pcm_length>>1)-1-i];
 	}
-	dct4_result=dct4(pcm_shorten, pcm_length/2);
+	dct4_result=dct4(pcm_shorten, pcm_length>>1);
+	for (i=0; i<(pcm_length>>1); ++i)
+	{
+		dct4_result[i]*=2; /*Normalize 상수는 MDCT에서 2, IMDCT에서 2/N*/
+	}
 	free(pcm_shorten);
 	return dct4_result;
 }
 
-void imdct(float *dct_value, int mdct_length)
+float* imdct(float *dct_value, int mdct_length)
 {
-	int i, j;
-	float* temp_idct;
-	temp_idct=(float*)calloc(window_size,sizeof(float));
-	for(i=0; i<mdct_length*2; ++i)
+	int i;
+	static float *temp_idct;
+	float *tempsave, *tempsave_long, normalize;
+	int length2x;
+	length2x=mdct_length*2;
+	temp_idct=(float*)calloc(length2x,sizeof(float));
+	tempsave_long=(float*)calloc(length2x,sizeof(float));
+	/*for(i=0; i<mdct_length*2; ++i)
 	{
 		for (j=0; j<mdct_length; ++j)
 		{
 			temp_idct[i]+=dct_value[j]*cos(PI*(2*i+1+mdct_length)*(2*j+1)/(2.0*(float)mdct_length));
 		}
+	}*/
+	tempsave=dct4(dct_value,mdct_length);
+	normalize=1.0/mdct_length;
+	for (i=0; i<mdct_length; ++i)
+	{
+		tempsave_long[i]=tempsave[i];
 	}
+	for (i=mdct_length; i<length2x; ++i)
+	{
+		tempsave_long[i]=-1*tempsave[length2x-1-i];
+	}
+	for (i=(mdct_length>>1); i<length2x; ++i)
+	{
+		temp_idct[i-(mdct_length>>1)]=normalize*tempsave_long[i];
+	}
+	for (i=0; i<(mdct_length>>1); ++i)
+	{
+		temp_idct[i+3*(mdct_length>>1)]=normalize*tempsave_long[i];
+	}
+	free(tempsave_long);
+	free(tempsave);
+	return temp_idct;
 }
