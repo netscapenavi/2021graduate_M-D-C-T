@@ -78,7 +78,7 @@ char *extract_filename_from_path(const char *path)
 }
 struct csv_dec_package *coeff_from_csv(FILE *csvfile)
 {
-	unsigned int i,j,k,l,half_block;
+	unsigned int i,j,k,l,half_block,temp_block_count;
 	char tempch='d';
 	char imdct_before[MAX_SMALL_CHUNK];
 	static struct csv_dec_package for_imdct;
@@ -87,7 +87,17 @@ struct csv_dec_package *coeff_from_csv(FILE *csvfile)
 	for_imdct.charac_count=ftell(csvfile);
 	fseek(csvfile,0,SEEK_SET);
 	for_imdct.block_count=0;
+	temp_block_count=0;
 	i=0;
+	while (i<for_imdct.charac_count)
+	{
+		tempch=(char)fgetc(csvfile);
+		if (tempch=='\n') {
+			++for_imdct.block_count;
+		}
+		++i;
+	}
+	rewind(csvfile);
 	while (tempch!='\n')
 	{
 		tempch=fgetc(csvfile);
@@ -99,14 +109,14 @@ struct csv_dec_package *coeff_from_csv(FILE *csvfile)
 	half_block=for_imdct.window_size_pack;
 	for_imdct.window_size_pack*=2;
 	rewind(csvfile);
-	for_imdct.coeff_bundle=(double*)malloc(half_block*sizeof(double));
-	j=0;k=0;
+	for_imdct.coeff_bundle=(double*)malloc(half_block*(for_imdct.block_count+1)*sizeof(double));
+	i=0;j=0;k=0;
 	while (i<for_imdct.charac_count)
 	{
 		tempch=(char)fgetc(csvfile);
 		if (tempch==',') {
 			imdct_before[j]='\n';
-            *(for_imdct.coeff_bundle+for_imdct.block_count*half_block+k)=atof(imdct_before);
+            *(for_imdct.coeff_bundle+temp_block_count*half_block+k)=atof(imdct_before);
 			l=0;
 			while (l<MAX_SMALL_CHUNK)
 			{
@@ -117,11 +127,8 @@ struct csv_dec_package *coeff_from_csv(FILE *csvfile)
 			j=0;
 		} else if (tempch=='\n') {
 			imdct_before[j]='\n';
-            *(for_imdct.coeff_bundle+for_imdct.block_count*half_block+k)=atof(imdct_before);
-			++for_imdct.block_count;
-			temp_ptr=(double*)realloc((void*)for_imdct.coeff_bundle,(half_block*(for_imdct.block_count+1))*sizeof(double));
-			for_imdct.coeff_bundle=temp_ptr;
-			temp_ptr=0;
+            *(for_imdct.coeff_bundle+temp_block_count*half_block+k)=atof(imdct_before);
+			++temp_block_count;
 			l=0;
 			while (l<MAX_SMALL_CHUNK)
 			{
