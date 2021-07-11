@@ -1,7 +1,7 @@
 #define CHANNEL_NUM 2
 struct csv_dec_package{
-	int block_count;
-	int window_size_pack;
-	int charac_count;
-	float *coeff_bundle;
+	unsigned int block_count;
+	unsigned int window_size_pack;
+	unsigned int charac_count;
+	double *coeff_bundle;
 };

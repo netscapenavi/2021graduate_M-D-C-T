@@ -11,15 +11,15 @@ int window_size;
 
 int main(int argc, char** argv)
 {
-	float* dct_result;
+	double* dct_result;
 	FILE *mdct_container;
-	int i, j, k;
+	unsigned int i, j, k;
 	char filename[MAX_PATH_LENGTH];
 	char *newfilename;
-	float *pcmaud, *block_for_dct, *window;
-	float *pcmch[2];/*left channel: pcmch[0][], right channel: pcmch[1][]*/
+	double *pcmaud, *block_for_dct, *window;
+	double *pcmch[2];/*left channel: pcmch[0][], right channel: pcmch[1][]*/
 	SF_INFO soundinfo;
-	int length_for_process, total_block_num;
+	unsigned int length_for_process, total_block_num;
 	SNDFILE *opened_file;
 	if (argc<3){
 		printf("Not enough arguments. First, type in the window size. The name of the sound file should follow.\n");
@@ -43,6 +43,10 @@ int main(int argc, char** argv)
 	strncpy(filename,*argv,MAX_PATH_LENGTH-1);
 	file_initialize(&soundinfo);
 	opened_file=sf_open(filename, SFM_READ, &soundinfo);/*SNDFILE 형식 변수에 오디오 파일의 PCM 신호 입력. SF_INFO 형식 변수에 파일의 기타 정보 입력*/
+	if (opened_file==0) {
+		printf("No such file exists.\n");
+		return -5;
+	}
 	newfilename=copy_csvfile_name(filename);
 	mdct_container=fopen(newfilename, "w");
 	free(newfilename);
@@ -54,13 +58,13 @@ int main(int argc, char** argv)
 		return -4;
 	}
 	window=vorbis_window_gen();
-	pcmaud = (float*) calloc(soundinfo.frames*soundinfo.channels, sizeof(float));
+	pcmaud = (double*) calloc(soundinfo.frames*soundinfo.channels, sizeof(double));
 	length_for_process=(window_size/2)*(soundinfo.frames/(window_size/2))+window_size;
 	for (i=0; i<soundinfo.channels; ++i)
 	{
-		pcmch[i]=(float*) calloc(length_for_process,sizeof(float));
+		pcmch[i]=(double*) calloc(length_for_process,sizeof(double));
 	}
-	sf_readf_float(opened_file,pcmaud,soundinfo.frames);/*float 형식으로 PCM 신호를 변환*/
+	sf_readf_double(opened_file,pcmaud,soundinfo.frames);/*double 형식으로 PCM 신호를 변환*/
 	for (i=0; i<soundinfo.frames; ++i)/*입력받은 PCM 신호를 각 채널로 분리.*/
 	{
 		for (j=0; j<soundinfo.channels; ++j)
@@ -70,8 +74,8 @@ int main(int argc, char** argv)
 	}
 	sf_close(opened_file);
 	free(pcmaud);
-	block_for_dct=(float*)calloc(window_size,sizeof(float));
-	dct_result=(float*)calloc(window_size/2,sizeof(float));
+	block_for_dct=(double*)calloc(window_size,sizeof(double));
+	dct_result=(double*)calloc(window_size/2,sizeof(double));
 	total_block_num=length_for_process/(window_size/2)-1;
 	for (k=0; k<total_block_num; ++k)
 	{
@@ -85,7 +89,7 @@ int main(int argc, char** argv)
 			dct_result=mdct(block_for_dct,window_size);
 			for (j=0; j<(window_size>>1)-1; ++j)
 			{
-				fprintf(mdct_container, "%f, ", dct_result[j]);
+				fprintf(mdct_container, "%lf, ", dct_result[j]);
 				/*CSV 파일에 MDCT coeffcient 기록 순서:
 				L, 1st window_size sample
 				R, 1st window_size sample
@@ -97,7 +101,7 @@ int main(int argc, char** argv)
 				.
 				*/
 			}
-			fprintf(mdct_container, "%f\n", dct_result[window_size/2-1]);
+			fprintf(mdct_container, "%lf\n", dct_result[window_size/2-1]);
 			free(dct_result);
 		}
 	}

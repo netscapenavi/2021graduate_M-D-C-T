@@ -1,4 +1,4 @@
-float* dct4(float*, int);
-float* mdct(float*, int);
-float* vorbis_window_gen();
-void imdct(float*,int);
+double* dct4(double*, int);
+double* mdct(double*, int);
+double* vorbis_window_gen();
+void imdct(double*,int);
