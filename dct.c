@@ -98,7 +98,7 @@ double* imdct(double *dct_value, int mdct_length)
 		}
 	}*/
 	tempsave=dct4(dct_value,mdct_length);
-	normalize=((double)1.0)/mdct_length;
+	normalize=((double)1.0)/mdct_length; /*MDCT의 normalize를 위한 상수가 여기에 포함.*/
 	for (i=0; i<mdct_length; ++i)
 	{
 		tempsave_long[i]=normalize*tempsave[i];

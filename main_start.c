@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 			return -3;
 		}
 	}
-	dec_set=coeff_from_csv(csvfile);
+	dec_set=coeff_from_csv(csvfile); /*dec_set에는 block number, block size (window size), float 형식의 MDCT coefficient, CSV file의 글자 수를 기록한다.*/
 	fclose(csvfile);
 	window_size=dec_set->window_size_pack;
 	imdct_after=(double*)malloc((window_size>>1)*sizeof(double));
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
 		pcm[i]=(double*)calloc(pcm_entire_length,sizeof(double));
 		for (k=0; k<dec_set->block_count; ++k)
 		{
-			for (j=0; j<(window_size>>1); ++j)
+			for (j=0; j<(window_size>>1); ++j) /*MDCT coefficient에 IMDCT를 수행하기 위해 window_size의 절반만큼씩 나누어 저장.*/
 			{	
 				*(imdct_after+j)=(dec_set->coeff_bundle)[j+k*window_size+i*(window_size>>1)];
 			}
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
 				tempflt[j]*=window[j];
 				pcm[i][j+k*(window_size>>1)]+=tempflt[j];
 			}
-			free(tempflt);
+			free(tempflt); /*imdct 함수의 static float를 free한다.*/
 		}
 	}
 	free(window);
