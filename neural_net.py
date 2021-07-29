@@ -1,8 +1,10 @@
 import csv
 import glob, os
 import tensorflow, numpy
-from tensorflow import keras
-from tensorflow.keras import layers
+
+def erb_weighted_mean_square(realvalue,prediction):
+    return
+
 block_size=256 #여기에는 MDCT를 수행한 block 하나당 PCM sample 수가 ""아니라"", csv 파일에 저장된 block 하나 당 MDCT coeffcient 수를 적는다.
 learning_rate_calc=block_size*0.5*1.404296875*1e-5
 node_in_coeff=[[]]
@@ -23,42 +25,80 @@ csv_files_eval=glob.glob(os.path.join(files_eval, "*.csv"))
 csv_files_eval.sort()
 
 nn_model=tensorflow.keras.models.Sequential()
-nn_model.add(tensorflow.keras.layers.InputLayer(input_shape=block_size,))
-nn_model.add(tensorflow.keras.layers.Dense(units=block_size/2,activation='tanh'))
-nn_model.add(tensorflow.keras.layers.Dense(units=block_size/2,activation='tanh'))
-nn_model.add(tensorflow.keras.layers.Dense(units=block_size,activation='linear'))
+nn_model.add(tensorflow.keras.layers.InputLayer(input_shape=block_size*2))
+nn_model.add(tensorflow.keras.layers.Dense(units=block_size,activation='tanh'))
+nn_model.add(tensorflow.keras.layers.Dense(units=block_size,activation='tanh'))
+nn_model.add(tensorflow.keras.layers.Dense(units=block_size*2,activation='linear'))
 i=0
 while (i<len(csv_files_train)):
     with open(csv_files_train[i],'r') as nn_csv: #As long as the commands are within the 'with' namespace, the csv file will remain open.
         str_coeff=csv.reader(nn_csv, delimiter=',', quoting=csv.QUOTE_NONNUMERIC) #Reading the csv file.
         tempblock=list(str_coeff) #서로 다른 수의 MDCT coefficient block을 저장하고 있는 csv 파일을
-                                    # 순수한 float32로 이루어진 list로만 구성된 하나의 numpy array에 넣기 위한 방법.
-        inblock=inblock+tempblock
+                                 # 순수한 float32로 이루어진 list로만 구성된 하나의 numpy array에 넣기 위한 방법.
+    j=0
+    while j<len(tempblock):
+        if (j%2==0):
+            saveblock=[]
+            saveblock=tempblock[j]
+        else:
+            saveblock=saveblock+tempblock[j]
+            inblock.append(saveblock)
+        j=j+1
     with open(csv_files_train[i+1],'r') as nn_csv:
         str_coeff=csv.reader(nn_csv, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
         tempblock=list(str_coeff)
-        outblock=outblock + tempblock
+    j=0
+    while j<len(tempblock):
+        if (j%2==0):
+            saveblock=[]
+            saveblock=tempblock[j]
+        else:
+            saveblock=saveblock+tempblock[j]
+            outblock.append(saveblock)
+        j=j+1
     i=i+2
 i=0
 while i<len(csv_files_eval):
     with open(csv_files_eval[i],'r') as nn_csv:  # As long as the commands are within the 'with' namespace, the csv file will remain open.
         str_coeff = csv.reader(nn_csv, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)  # Reading the csv file.
         tempblock = list(str_coeff)
-        ieval = ieval + tempblock
+    j=0
+    while j<len(tempblock):
+        if (j%2==0):
+            saveblock=[]
+            saveblock=tempblock[j]
+        else:
+            saveblock=saveblock+tempblock[j]
+            ieval.append(saveblock)
+        j=j+1
     with open(csv_files_eval[i+1], 'r') as nn_csv:
         str_coeff = csv.reader(nn_csv, delimiter=',', quoting=csv.QUOTE_NONNUMERIC)
         tempblock = list(str_coeff)
-        oeval = oeval + tempblock
+    j=0
+    while j<len(tempblock):
+        if (j%2==0):
+            saveblock=[]
+            saveblock=tempblock[j]
+        else:
+            saveblock=saveblock+tempblock[j]
+            oeval.append(saveblock)
+        j=j+1
     i=i+2
+i=0
 itemp=numpy.array(inblock)
+
 otemp=numpy.array(outblock)
-ievalt=numpy.array(ieval)
-oevalt=numpy.array(oeval)
+
+ievaltemp=numpy.array(ieval)
+
+oevaltemp=numpy.array(oeval)
+
 nn_model.compile(optimizer=tensorflow.keras.optimizers.SGD(learning_rate=learning_rate_calc,momentum=learning_rate_calc*0.1),
           loss=tensorflow.keras.losses.mean_squared_error)
+
 for i in range(0,50):
     nn_model.fit(itemp,otemp,epochs=5)
-    tempoutcome=nn_model.evaluate(ievalt,oevalt)
+    tempoutcome=nn_model.evaluate(ievaltemp,oevaltemp)
 
 #neural network에서 얻은 MDCT coefficient를 IMDCT 프로그램에서 받아들이는 csv 파일 형식으로 작성해야 한다.
 with open('new_nn_coefficient.csv','w+',newline='') as new_coe: #Using option 'w+' creates a new file or clears the existing content of the already existing file.
