@@ -2,11 +2,14 @@ import csv
 import glob, os
 import tensorflow, numpy
 
-def erb_weighted_mean_square(realvalue,prediction):
-    return
+block_size=1024 #여기에는 MDCT를 수행한 block 하나당 PCM sample 수가 ""아니라"", csv 파일에 저장된 block 하나 당 MDCT coeffcient 수를 적는다.
+sampling_rate=44100
 
-block_size=256 #여기에는 MDCT를 수행한 block 하나당 PCM sample 수가 ""아니라"", csv 파일에 저장된 block 하나 당 MDCT coeffcient 수를 적는다.
-learning_rate_calc=block_size*0.5*1.404296875*1e-5
+def erb_weighted_mse(realvalue,prediction):
+    unit_freqhz=sampling_rate/(block_size*2)
+
+coef_max_value=block_size*1.404296875
+learning_rate_calc=0.01
 node_in_coeff=[[]]
 inblock=[]
 outblock=[]
@@ -85,15 +88,16 @@ while i<len(csv_files_eval):
         j=j+1
     i=i+2
 i=0
-itemp=numpy.array(inblock)
+icoef=1/coef_max_value
+itemp=numpy.array(inblock)*icoef
 
-otemp=numpy.array(outblock)
+otemp=numpy.array(outblock)*icoef
 
-ievaltemp=numpy.array(ieval)
+ievaltemp=numpy.array(ieval)*icoef
 
-oevaltemp=numpy.array(oeval)
+oevaltemp=numpy.array(oeval)*icoef
 
-nn_model.compile(optimizer=tensorflow.keras.optimizers.SGD(learning_rate=learning_rate_calc,momentum=learning_rate_calc*0.1),
+nn_model.compile(optimizer=tensorflow.keras.optimizers.SGD(learning_rate=learning_rate_calc,momentum=0.1),
           loss=tensorflow.keras.losses.mean_squared_error)
 
 for i in range(0,50):
