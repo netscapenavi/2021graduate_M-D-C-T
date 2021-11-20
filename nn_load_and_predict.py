@@ -49,6 +49,7 @@ while (i<len(csv_files_train)):
         tempblock=list(str_coeff) #서로 다른 수의 MDCT coefficient block을 저장하고 있는 csv 파일을
                                  # 순수한 float32로 이루어진 list로만 구성된 하나의 numpy array에 넣기 위한 방법.
     j=0
+    inblock=[]
     while j<len(tempblock):
         if (j-((j >>1)<<1) == 0):
             saveblock=[]
@@ -70,6 +71,7 @@ while (i<len(csv_files_train)):
     temp_csv_filename=temp_csv_filename+"_pred.csv"
     with open(os.getcwd()+"\\predicted\\"+temp_csv_filename, 'w+', newline='') as pred_save:
         save=csv.writer(pred_save)
+        indiv_stereo=[]
         for j in range(0,len(otemp)):
             indiv_stereo=otemp[j].tolist()
             save.writerow(indiv_stereo[0:block_size])
