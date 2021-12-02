@@ -38,7 +38,14 @@ csv_files_train=glob.glob(os.path.join(files_train, "*.csv"))
 csv_files_train.sort() #파일 이름 기준으로 알파벳 순으로 정렬. 이걸 이용해 '(파일 이름)_i.csv'는 neural network의 input node,
                         # '(파일 이름)_o.csv'는 neural network의 output node에 입력하는 것과 같은 방식으로 지정할 수 있다.
 
-nn_model=tensorflow.keras.models.load_model('saved_model_1')
+nn_model=tensorflow.keras.Sequential([
+tensorflow.keras.layers.InputLayer(input_shape=block_size*2),
+tensorflow.keras.layers.Dense(units=block_size,activation='relu'),
+tensorflow.keras.layers.Dense(units=block_size,activation='relu'),
+tensorflow.keras.layers.Dense(units=block_size*2,activation='linear')]
+)
+
+nn_model.load_weights("saved_model_1.h5")
 
 i=0
 loss_per_epoch_train.append(0)
